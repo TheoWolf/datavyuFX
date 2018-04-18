@@ -1,33 +1,99 @@
 package util;
 
+import javafx.concurrent.Task;
+
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 
-// The clock will use the DV StreamViewer Rate to update the elapsed time according to the rate speed
+/**
+ *
+ */
 public class Clock {
 
     //TODO: Create a class of static variables
+    /**
+     *
+     */
     public static TimeUnit DEFAULT_TIMEUNIT = MICROSECONDS;
 
-    // Use a range Slider to represent the onset and offset of the Ccock
+    /** Clock tick period in milliseconds */
+    private static final long CLOCK_SYNC_INTERVAL = 100L;
+
+    /** Clock initial delay in milliseconds */
+    private static final long CLOCK_SYNC_DELAY = 0L;
+
+
+    // Use a range Slider to represent the onset and offset of the Clock
+    /**
+     *
+     */
     private long onset = 0;
+
+    /**
+     *
+     */
     private long offset = 0;
 
+    /**
+     *
+     */
     private boolean isRunning;
+
+    /**
+     *
+     */
     private long startTime;
+
+    /**
+     *
+     */
     private long elapsedNanos; // bind to the GUI TEXT and DVStreamViewer
 
+    /**
+     *
+     */
+    private long currentTime;
+
+    /**
+     *
+     */
+    private ScheduledExecutorService currentTimeExecutor;
+
+    /**
+     *
+     */
+    private Runnable updateElapsedNanosTask = () -> {
+        currentTime = elapsedTime();
+        System.out.println("Current Time " + toString());
+    };
+
+    /**
+     *
+     */
     private long rate = 1; //will use this rate for now
 
+    /**
+     *
+     * @return
+     */
     public static Clock createClock() { return new Clock(); }
 
-    Clock(){ startTime = systemNanoTime(); }
+    /**
+     * Constructor
+     */
+    Clock(){
 
-    static long systemNanoTime() {return System.nanoTime(); }
+        startTime = systemNanoTime();
+
+        currentTimeExecutor = Executors.newSingleThreadScheduledExecutor();
+
+        currentTimeExecutor.scheduleAtFixedRate(updateElapsedNanosTask
+                ,CLOCK_SYNC_DELAY,CLOCK_SYNC_INTERVAL, TimeUnit.MILLISECONDS);
+    }
 
     public void start(){
         if(isRunning){ throw new IllegalStateException("The Clock is already running"); }
@@ -56,6 +122,8 @@ public class Clock {
 
     public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos); }
 
+    private long systemNanoTime() {return System.nanoTime(); }
+
     @Override
     public String toString() {
         long timeStampNano =  elapsedNanos();
@@ -63,7 +131,7 @@ public class Clock {
         String hours = String.format("%02d", TimeUnit.NANOSECONDS.toHours(timeStampNano));
         String minutes = String.format("%02d",TimeUnit.NANOSECONDS.toMinutes(timeStampNano) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(timeStampNano)));
         String seconds = String.format("%02d",TimeUnit.NANOSECONDS.toSeconds(timeStampNano) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(timeStampNano)));
-        String millis =  String.format("%02d",TimeUnit.NANOSECONDS.toMillis(timeStampNano) - TimeUnit.SECONDS.toMillis(TimeUnit.NANOSECONDS.toSeconds(timeStampNano)));
+        String millis =  String.format("%03d",TimeUnit.NANOSECONDS.toMillis(timeStampNano) - TimeUnit.SECONDS.toMillis(TimeUnit.NANOSECONDS.toSeconds(timeStampNano)));
 
         String timeStampString = hours
                 +":"+ minutes
@@ -74,50 +142,14 @@ public class Clock {
     }
 
     private long elapsedNanos() {
-        return isRunning ? rate * (systemNanoTime() - startTime) + elapsedNanos : elapsedNanos;
+        return isRunning ? ((rate * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
     }
-
 
     public static void main (String[] args) throws InterruptedException {
         Clock clock = Clock.createClock();
 
-        long start = System.nanoTime();
         clock.start();
         System.out.println("Clock Started ");
-
-        System.out.println("System: "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) +" Clock: "+ clock.toString());
-
-        TimeUnit.MILLISECONDS.sleep(1000);
-
-        long elapsedTime =  System.nanoTime() - start;
-
-        clock.stop();
-        System.out.println("Clock Stopped ");
-        System.out.println("System: "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) +" Clock: "+ clock.toString());
-
-        TimeUnit.MILLISECONDS.sleep(10);
-
-        System.out.println("Clock: "+ clock.toString());
-
-        clock.start();
-        System.out.println("Clock Started ");
-
-        TimeUnit.MILLISECONDS.sleep(3000);
-
-        System.out.println("Clock: "+ clock.toString());
-
-        clock.reset();
-        System.out.println("Clock reset");
-
-        TimeUnit.MILLISECONDS.sleep(10);
-
-        clock.start();
-        System.out.println("Clock Started ");
-
-        TimeUnit.MILLISECONDS.sleep(10);
-
-        System.out.println("Clock: "+ clock.toString());
-
     }
 }
 
