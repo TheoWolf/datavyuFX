@@ -6,84 +6,62 @@ import java.time.Duration;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 
-/**
- *
- */
+/**  */
 public class Clock {
 
-    //TODO: Create a class of static variables
-    /**
-     *
-     */
+    /**  */
     public static TimeUnit DEFAULT_TIMEUNIT = MICROSECONDS;
 
-    /**
-     * Clock tick period in milliseconds
-     */
+    /** Clock tick period in milliseconds */
     private static final long CLOCK_SYNC_INTERVAL = 100L;
 
-    /**
-     * Clock initial delay in milliseconds
-     */
+    /** Clock initial delay in milliseconds */
     private static final long CLOCK_SYNC_DELAY = 0L;
 
 
     // Use a range Slider to represent the onset and offset of the Clock
-    /**
-     * //TODO: bind to the UI
-     */
+    /** */
     private long onset = 0;
 
-    /**
-     * //TODO: bind to UI
-     */
+    /**  */
     private long offset = 5000000L;
 
-    /**
-     *
-     */
+    /**  */
     private boolean isRunning;
 
-    /**
-     *
-     */
+    private boolean isCycling = false;
+
+    /**  */
     private long startTime;
 
-    /**
-     *
-     */
+    /**  */
     private long elapsedNanos; // bind to the GUI TEXT and DVStreamViewer
 
-    /**
-     * //TODO: bind to UI
-     */
+    /**  */
     private long currentTime;
 
-    /**
-     *
-     */
+    /**  */
     private ScheduledExecutorService currentTimeExecutor;
 
-    /**
-     *
-     */
+    //TODO: fix rate bug
+    /** */
+    private long rate = 1; //will use this rate for now
+
+    /**  */
     private Runnable updateElapsedNanosTask = () -> {
         if (elapsedTime() >= offset){
             stop();
-            reset();
-            start();
+            if (isCycling){
+                reset();
+                start();
+            }
         }
         System.out.println("Current Time " + toString());
     };
-
-    /**
-     * TODO: bind to UI
-     * TODO: fix rate bug
-     */
-    private long rate = 1; //will use this rate for now
 
     /**
      *
@@ -91,31 +69,22 @@ public class Clock {
      */
     public static Clock createClock() { return new Clock(); }
 
-    /**
-     * Constructor
-     */
+    /** Constructor */
     Clock(){
-
         startTime = systemNanoTime();
-
         currentTimeExecutor = Executors.newSingleThreadScheduledExecutor();
-
         currentTimeExecutor.scheduleAtFixedRate(updateElapsedNanosTask
                 ,CLOCK_SYNC_DELAY,CLOCK_SYNC_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     *
-     */
+    /**  */
     public void start(){
         if(isRunning){ throw new IllegalStateException("The Clock is already running"); }
         isRunning = true;
         startTime = systemNanoTime();
     }
 
-    /**
-     *
-     */
+    /**  */
     public void stop(){
         long lastTime =  systemNanoTime();
         if(!isRunning){ throw new IllegalStateException("The Clock is already stopped"); }
@@ -124,12 +93,15 @@ public class Clock {
         elapsedNanos =  elapsedNanos + (lastTime - startTime);
     }
 
-    /**
-     *
-     */
+    /**  */
     public void reset(){
         elapsedNanos = onset;
         isRunning = false;
+    }
+
+    /**  */
+    public void setElapsedNanos(long timeInMillis){
+        elapsedNanos = NANOSECONDS.convert(timeInMillis, MILLISECONDS);
     }
 
     /**
@@ -139,23 +111,11 @@ public class Clock {
     public boolean isRunning() {return isRunning; }
 
     /**
-     *
-     * @param targetUnit
-     * @return
-     */
-    public long elapsedTime(TimeUnit targetUnit) { return targetUnit.convert(elapsedNanos(), NANOSECONDS); }
-
-    /**
+     * Elapsed time in Milliseconds
      *
      * @return
      */
     public long elapsedTime() { return DEFAULT_TIMEUNIT.convert(elapsedNanos(), NANOSECONDS); }
-
-    /**
-     *
-     * @return
-     */
-    public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos()); }
 
     /**
      *
@@ -177,6 +137,18 @@ public class Clock {
         return timeStampString;
     }
 
+    /**
+     *
+     * @param targetUnit
+     * @return
+     */
+    public long elapsedTime(TimeUnit targetUnit) { return targetUnit.convert(elapsedNanos(), NANOSECONDS); }
+
+    /**
+     *
+     * @return
+     */
+    public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos()); }
 
     private long elapsedNanos() {
         return isRunning ? ((rate * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
@@ -186,6 +158,7 @@ public class Clock {
         Clock clock = Clock.createClock();
 
         clock.start();
+
         System.out.println("Clock Started ");
     }
 }
