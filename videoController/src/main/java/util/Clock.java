@@ -60,10 +60,15 @@ public class Clock {
     public String toString() {
         long timeStampNano =  elapsedNanos();
 
-        String timeStampString = TimeUnit.NANOSECONDS.toHours(timeStampNano)
-                +":"+ TimeUnit.NANOSECONDS.toMinutes(timeStampNano)
-                +":"+ TimeUnit.NANOSECONDS.toSeconds(timeStampNano)
-                +":"+ TimeUnit.NANOSECONDS.toMillis(timeStampNano);
+        String hours = String.format("%02d", TimeUnit.NANOSECONDS.toHours(timeStampNano));
+        String minutes = String.format("%02d",TimeUnit.NANOSECONDS.toMinutes(timeStampNano) - TimeUnit.HOURS.toMinutes(TimeUnit.NANOSECONDS.toHours(timeStampNano)));
+        String seconds = String.format("%02d",TimeUnit.NANOSECONDS.toSeconds(timeStampNano) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(timeStampNano)));
+        String millis =  String.format("%02d",TimeUnit.NANOSECONDS.toMillis(timeStampNano) - TimeUnit.SECONDS.toMillis(TimeUnit.NANOSECONDS.toSeconds(timeStampNano)));
+
+        String timeStampString = hours
+                +":"+ minutes
+                +":"+ seconds
+                +":"+ millis;
 
         return timeStampString;
     }
@@ -78,14 +83,16 @@ public class Clock {
 
         long start = System.nanoTime();
         clock.start();
+        System.out.println("Clock Started ");
 
         System.out.println("System: "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) +" Clock: "+ clock.toString());
 
-        TimeUnit.MILLISECONDS.sleep(10);
+        TimeUnit.MILLISECONDS.sleep(1000);
 
         long elapsedTime =  System.nanoTime() - start;
 
         clock.stop();
+        System.out.println("Clock Stopped ");
         System.out.println("System: "+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) +" Clock: "+ clock.toString());
 
         TimeUnit.MILLISECONDS.sleep(10);
@@ -93,8 +100,21 @@ public class Clock {
         System.out.println("Clock: "+ clock.toString());
 
         clock.start();
+        System.out.println("Clock Started ");
 
-        TimeUnit.MILLISECONDS.sleep(40);
+        TimeUnit.MILLISECONDS.sleep(3000);
+
+        System.out.println("Clock: "+ clock.toString());
+
+        clock.reset();
+        System.out.println("Clock reset");
+
+        TimeUnit.MILLISECONDS.sleep(10);
+
+        clock.start();
+        System.out.println("Clock Started ");
+
+        TimeUnit.MILLISECONDS.sleep(10);
 
         System.out.println("Clock: "+ clock.toString());
 
