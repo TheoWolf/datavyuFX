@@ -5,9 +5,7 @@ import javafx.concurrent.Task;
 import java.time.Duration;
 import java.util.concurrent.*;
 
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.*;
 
 
 /**  */
@@ -24,11 +22,11 @@ public class Clock {
 
 
     // Use a range Slider to represent the onset and offset of the Clock
-    /** */
-    private long onset = 0;
+    /** in milliseconds */
+    private long onset = 0L;
 
-    /**  */
-    private long offset = 5000000L;
+    /** in milliseconds, default value is 1H: MILLISECONDS.convert(1, HOURS); */
+    private long offset = MILLISECONDS.convert(2, MINUTES); // will use minutes for testing
 
     /**  */
     private boolean isRunning;
@@ -160,6 +158,8 @@ public class Clock {
         clock.start();
 
         System.out.println("Clock Started ");
+
+
     }
 }
 
