@@ -20,23 +20,27 @@ public class Clock {
      */
     public static TimeUnit DEFAULT_TIMEUNIT = MICROSECONDS;
 
-    /** Clock tick period in milliseconds */
+    /**
+     * Clock tick period in milliseconds
+     */
     private static final long CLOCK_SYNC_INTERVAL = 100L;
 
-    /** Clock initial delay in milliseconds */
+    /**
+     * Clock initial delay in milliseconds
+     */
     private static final long CLOCK_SYNC_DELAY = 0L;
 
 
     // Use a range Slider to represent the onset and offset of the Clock
     /**
-     *
+     * //TODO: bind to the UI
      */
     private long onset = 0;
 
     /**
-     *
+     * //TODO: bind to UI
      */
-    private long offset = 0;
+    private long offset = 5000000L;
 
     /**
      *
@@ -54,7 +58,7 @@ public class Clock {
     private long elapsedNanos; // bind to the GUI TEXT and DVStreamViewer
 
     /**
-     *
+     * //TODO: bind to UI
      */
     private long currentTime;
 
@@ -67,12 +71,17 @@ public class Clock {
      *
      */
     private Runnable updateElapsedNanosTask = () -> {
-        currentTime = elapsedTime();
+        if (elapsedTime() >= offset){
+            stop();
+            reset();
+            start();
+        }
         System.out.println("Current Time " + toString());
     };
 
     /**
-     *
+     * TODO: bind to UI
+     * TODO: fix rate bug
      */
     private long rate = 1; //will use this rate for now
 
@@ -95,12 +104,18 @@ public class Clock {
                 ,CLOCK_SYNC_DELAY,CLOCK_SYNC_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     *
+     */
     public void start(){
         if(isRunning){ throw new IllegalStateException("The Clock is already running"); }
         isRunning = true;
         startTime = systemNanoTime();
     }
 
+    /**
+     *
+     */
     public void stop(){
         long lastTime =  systemNanoTime();
         if(!isRunning){ throw new IllegalStateException("The Clock is already stopped"); }
@@ -109,19 +124,43 @@ public class Clock {
         elapsedNanos =  elapsedNanos + (lastTime - startTime);
     }
 
+    /**
+     *
+     */
     public void reset(){
         elapsedNanos = onset;
         isRunning = false;
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isRunning() {return isRunning; }
 
+    /**
+     *
+     * @param targetUnit
+     * @return
+     */
     public long elapsedTime(TimeUnit targetUnit) { return targetUnit.convert(elapsedNanos(), NANOSECONDS); }
 
+    /**
+     *
+     * @return
+     */
     public long elapsedTime() { return DEFAULT_TIMEUNIT.convert(elapsedNanos(), NANOSECONDS); }
 
-    public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos); }
+    /**
+     *
+     * @return
+     */
+    public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos()); }
 
+    /**
+     *
+     * @return
+     */
     private long systemNanoTime() {return System.nanoTime(); }
 
     @Override
@@ -133,13 +172,11 @@ public class Clock {
         String seconds = String.format("%02d",TimeUnit.NANOSECONDS.toSeconds(timeStampNano) - TimeUnit.MINUTES.toSeconds(TimeUnit.NANOSECONDS.toMinutes(timeStampNano)));
         String millis =  String.format("%03d",TimeUnit.NANOSECONDS.toMillis(timeStampNano) - TimeUnit.SECONDS.toMillis(TimeUnit.NANOSECONDS.toSeconds(timeStampNano)));
 
-        String timeStampString = hours
-                +":"+ minutes
-                +":"+ seconds
-                +":"+ millis;
+        String timeStampString = hours + ":" + minutes +":"+ seconds +":"+ millis;
 
         return timeStampString;
     }
+
 
     private long elapsedNanos() {
         return isRunning ? ((rate * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
