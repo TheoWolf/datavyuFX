@@ -25,8 +25,8 @@ public class Clock {
     /** in milliseconds */
     private long onset = 0L;
 
-    /** in milliseconds, default value is 1H: MILLISECONDS.convert(1, HOURS); */
-    private long offset = NANOSECONDS.convert(200, MILLISECONDS); // will use minutes for testing
+    /** in nanoseconds, default value is 1H: MILLISECONDS.convert(1, HOURS); */
+    private long offset = NANOSECONDS.convert(1, HOURS); // will use minutes for testing
 
     /**  */
     private boolean isRunning;
@@ -47,7 +47,7 @@ public class Clock {
 
     //TODO: fix rate bug
     /** */
-    private Rate rate = Rate.stopRate(); //will use this rate for now
+    private Rate rate = Rate.playRate(); //will use this rate for now
 
 //    /**  */
 //    private Runnable updateElapsedNanosTask = () -> {
@@ -80,7 +80,6 @@ public class Clock {
     /**  */
     public Clock start(){
         if(isRunning){ throw new IllegalStateException("The Clock is already running"); }
-        System.out.println("Clock Started ");
         isRunning = true;
         startTime = systemNanoTime();
         return this;
@@ -90,7 +89,6 @@ public class Clock {
     public Clock stop(){
         long lastTime =  systemNanoTime();
         if(!isRunning){ throw new IllegalStateException("The Clock is already stopped"); }
-        System.out.println("Clock Stopped ");
         isRunning = false;
         elapsedNanos =  elapsedNanos + (lastTime - startTime);
         return this;
@@ -99,14 +97,17 @@ public class Clock {
     /**  */
     public Clock reset(){
         elapsedNanos = onset;
-        System.out.println("Clock Reset ");
         isRunning = false;
         return this;
     }
 
     /**  */
     public Clock setElapsedNanos(long timeInMillis){
-        elapsedNanos = NANOSECONDS.convert(timeInMillis, MILLISECONDS);
+        long timeInNanos = NANOSECONDS.convert(timeInMillis, MILLISECONDS);
+        if(onset < timeInNanos || timeInNanos > offset){
+            throw new IllegalStateException("The Time is not in the Onset Offset Boundary");
+        }
+        elapsedNanos = timeInNanos;
         return this;
     }
 
@@ -191,16 +192,25 @@ public class Clock {
         return isRunning ? (long) ((rate.getValue() * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
     }
 
-//    public static void main (String[] args) throws InterruptedException {
-//        Clock clock = Clock.createClock();
-//
-//        clock.start();
-//
-//
-//
-//
-////        System.out.println("Sleep for 300 ms");
-////        TimeUnit.MILLISECONDS.sleep(300);
-//    }
+    public static void main (String[] args) throws InterruptedException {
+        Clock clock = Clock.createClock();
+        System.out.println(clock.elapsedTime());
+        clock.start();
+        int cpt = 10;
+        while (cpt > 0){
+            try{
+                TimeUnit.MILLISECONDS.sleep(100);
+            }catch (Exception e){
+                System.out.println(e.getMessage());
+            }
+            System.out.println("Clock is Running: " + clock.isRunning());
+            System.out.println("Clock is Running: " + clock.elapsedTime());
+            cpt--;
+        }
+
+        System.out.println("End of logging");
+        System.out.println("Clock Total Time: " + clock.elapsedTime());
+        clock.stop();
+    }
 }
 
