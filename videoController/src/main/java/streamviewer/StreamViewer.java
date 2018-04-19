@@ -1,5 +1,6 @@
 package streamviewer;
 
+import media.DVMedia;
 import util.DVStatus;
 import util.Identifier;
 
@@ -33,6 +34,9 @@ public interface StreamViewer {
 
     /** Jump back by time in milliseconds */
     void back(long timeInMillis);
+
+    /** get the Media associated with the StreamViewer */
+    DVMedia getMedia();
 
     /** Get the current Status of the StreamViewer */
     DVStatus getStatus();
