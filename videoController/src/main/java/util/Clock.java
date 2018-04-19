@@ -1,7 +1,5 @@
 package util;
 
-import javafx.concurrent.Task;
-
 import java.time.Duration;
 import java.util.concurrent.*;
 
@@ -15,7 +13,7 @@ public class Clock {
     private static final TimeUnit DEFAULT_TIMEUNIT = MILLISECONDS;
 
     /** Clock tick period in milliseconds */
-    private static final long CLOCK_SYNC_INTERVAL = 10L;
+    private static final long CLOCK_SYNC_INTERVAL = 1L;
 
     /** Clock initial delay in milliseconds */
     private static final long CLOCK_SYNC_DELAY = 0L;
@@ -31,15 +29,15 @@ public class Clock {
     /**  */
     private boolean isRunning;
 
-    private boolean isCycling = true;
+    private boolean isCycling = false;
 
     /**  */
     private long startTime;
 
-    /**  */
-    private long elapsedNanos; // bind to the GUI TEXT and DVStreamViewer
+    /** On Nanos used internally  */
+    private long elapsedNanos;
 
-    /**  */
+    /** In Milliseconds and shared with other object */
     private long currentTime;
 
     /**  */
@@ -48,22 +46,6 @@ public class Clock {
     //TODO: fix rate bug
     /** */
     private Rate rate = Rate.playRate(); //will use this rate for now
-
-//    /**  */
-//    private Runnable updateElapsedNanosTask = () -> {
-//        currentTime = elapsedNanos();
-//        if (currentTime >= offset){
-//            stop();
-//            System.out.println("Time : " + toString() +  " Clock Offset: " + offset +" Clock is Running: "+ isRunning());
-//            if (isCycling){
-//                reset();
-//                start();
-//            }
-//        }else{
-//            System.out.println("Time : " + toString() +  " Clock Offset: " + offset +" Clock is Running: "+ isRunning());
-//            start();
-//        }
-//    };
 
     /**
      *
@@ -74,14 +56,17 @@ public class Clock {
     /** Constructor */
     Clock(){
         startTime = systemNanoTime();
-        currentTimeExecutor = Executors.newSingleThreadScheduledExecutor();
     }
 
     /**  */
     public Clock start(){
         if(isRunning){ throw new IllegalStateException("The Clock is already running"); }
         isRunning = true;
+        currentTimeExecutor = Executors.newSingleThreadScheduledExecutor();
+        currentTimeExecutor.scheduleAtFixedRate(updateElapsedNanosRunnable, CLOCK_SYNC_DELAY
+                , CLOCK_SYNC_INTERVAL, MILLISECONDS);
         startTime = systemNanoTime();
+        System.out.println("Clock is Starting");
         return this;
     }
 
@@ -90,7 +75,9 @@ public class Clock {
         long lastTime =  systemNanoTime();
         if(!isRunning){ throw new IllegalStateException("The Clock is already stopped"); }
         isRunning = false;
-        elapsedNanos =  elapsedNanos + (lastTime - startTime);
+        System.out.println("Clock is Stopping");
+        elapsedNanos = (long) (elapsedNanos + (rate.getValue() * (lastTime - startTime)));
+        currentTimeExecutor.shutdownNow();
         return this;
     }
 
@@ -98,21 +85,24 @@ public class Clock {
     public Clock reset(){
         elapsedNanos = onset;
         isRunning = false;
+        System.out.println("Clock Reset");
+        currentTimeExecutor.shutdownNow();
         return this;
     }
 
     /**  */
     public Clock setElapsedTime(final long timeInMillis){
         long timeInNanos = convertToNanos(timeInMillis);
-        if( timeInNanos < onset || timeInNanos > offset){
+        if(!isValidTime(timeInNanos)){
             throw new IllegalStateException("The Time is not in the Onset Offset Boundary");
         }
         elapsedNanos = timeInNanos;
+        System.out.println("Clock Elpased Time : " + elapsedNanos);
         return this;
     }
-
     public Clock setClockRate(final Rate newRate){
         rate = newRate;
+        System.out.println("Clock Elpased Time : " + elapsedNanos);
         return this;
     }
 
@@ -124,6 +114,7 @@ public class Clock {
             throw new IllegalStateException("Onset Can't be (-), >= Offset or > current elapsed time");
         }
         onset = newOnset;
+        System.out.println("Clock Onset: " + onset);
         return this;
     }
 
@@ -134,6 +125,7 @@ public class Clock {
             throw new IllegalStateException("Offset Can't be <= Onset or < the current elapsed time");
         }
         offset = convertToNanos(timeInMillis);
+        System.out.println("Clock Offset: " + offset);
         return this;
     }
 
@@ -157,17 +149,11 @@ public class Clock {
      */
     public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos()); }
 
-    public Rate getRate() {
-        return rate;
-    }
+    public Rate getRate() { return rate; }
 
-    public long getOnset() {
-        return onset;
-    }
+    public long getOnset() { return onset; }
 
-    public long getOffset() {
-        return offset;
-    }
+    public long getOffset() { return offset; }
 
     /**
      *
@@ -175,8 +161,11 @@ public class Clock {
      */
     public boolean isRunning() { return isRunning; }
 
-    public boolean isCycling() {
-        return isCycling;
+    public boolean isCycling() { return isCycling; }
+
+    public Clock setCycling(boolean cycling) {
+        isCycling = cycling;
+        return this;
     }
 
     private long elapsedNanos() {
@@ -187,9 +176,14 @@ public class Clock {
      *
      * @return
      */
-    private long systemNanoTime() {return System.nanoTime(); }
+    private long systemNanoTime() { return System.nanoTime(); }
 
     private long convertToNanos(long timeInMillis){ return NANOSECONDS.convert(timeInMillis, MILLISECONDS); }
+
+    private boolean isValidTime(long timeInNanos){
+        if( timeInNanos < onset || timeInNanos > offset){ return false; }
+        return true;
+    }
 
     @Override
     public String toString() {
@@ -205,25 +199,20 @@ public class Clock {
         return timeStampString;
     }
 
-    public static void main (String[] args) throws InterruptedException {
-        Clock clock = Clock.createClock();
-        System.out.println(clock.elapsedTime());
-        clock.start();
-        int cpt = 10;
-        while (cpt > 0){
-            try{
-                TimeUnit.MILLISECONDS.sleep(100);
-            }catch (Exception e){
-                System.out.println(e.getMessage());
+    /**  */
+    private Runnable updateElapsedNanosRunnable = () -> {
+        if(!isValidTime(elapsedNanos())){
+            stop();
+            currentTime = elapsedTime();
+            if (isCycling()){
+                reset();
+                start();
             }
-            System.out.println("Clock is Running: " + clock.isRunning());
-            System.out.println("Clock is Running: " + clock.elapsedTime());
-            cpt--;
+            System.out.println("Clock is Running (not valid Time): " + currentTime);
+        }else{
+            currentTime = elapsedTime();
+            System.out.println("Clock is Running: " + currentTime);
         }
-
-        System.out.println("End of logging");
-        System.out.println("Clock Total Time: " + clock.elapsedTime());
-        clock.stop();
-    }
+    };
 }
 
