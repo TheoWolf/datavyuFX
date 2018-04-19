@@ -109,14 +109,14 @@ public class ClockTest {
         long beforeNewElapsedTime = clock.elapsedTime();
 
         //Set new elapsed time when running
-        clock.setElapsedNanos(newElapsedTime);
+        clock.setElapsedTime(newElapsedTime);
 
         assertTrue(clock.elapsedTime() > beforeNewElapsedTime && clock.isRunning());
 
         waistTime(1000);
 
         clock.stop();
-        clock.setElapsedNanos(newElapsedTime);
+        clock.setElapsedTime(newElapsedTime);
 
         assertEquals(clock.elapsedTime(),newElapsedTime);
 
@@ -125,9 +125,9 @@ public class ClockTest {
         thrown.expect(IllegalStateException.class);
         thrown.expectMessage("The Time is not in the Onset Offset Boundary");
 
-        clock.setElapsedNanos(-1);
+        clock.setElapsedTime(-1);
 
-        clock.setElapsedNanos( MILLISECONDS.convert(2, HOURS) );
+        clock.setElapsedTime( MILLISECONDS.convert(2, HOURS) );
     }
 
     @Test

@@ -12,7 +12,7 @@ import static java.util.concurrent.TimeUnit.*;
 public class Clock {
 
     /**  */
-    public static TimeUnit DEFAULT_TIMEUNIT = MICROSECONDS;
+    private static final TimeUnit DEFAULT_TIMEUNIT = MILLISECONDS;
 
     /** Clock tick period in milliseconds */
     private static final long CLOCK_SYNC_INTERVAL = 10L;
@@ -102,51 +102,40 @@ public class Clock {
     }
 
     /**  */
-    public Clock setElapsedNanos(long timeInMillis){
-        long timeInNanos = NANOSECONDS.convert(timeInMillis, MILLISECONDS);
-        if(onset < timeInNanos || timeInNanos > offset){
+    public Clock setElapsedTime(final long timeInMillis){
+        long timeInNanos = convertToNanos(timeInMillis);
+        if( timeInNanos < onset || timeInNanos > offset){
             throw new IllegalStateException("The Time is not in the Onset Offset Boundary");
         }
         elapsedNanos = timeInNanos;
         return this;
     }
 
-    public Clock setClockRate(Rate newRate){
+    public Clock setClockRate(final Rate newRate){
         rate = newRate;
         return this;
     }
 
-    public Clock setOnset(long timeInMillis){
-        onset = NANOSECONDS.convert(timeInMillis, MILLISECONDS);
+    public Clock setOnset(final long timeInMillis){
+        long newOnset = convertToNanos(timeInMillis);
+        if(newOnset < 0
+                || newOnset >= offset
+                || newOnset > elapsedNanos()){
+            throw new IllegalStateException("Onset Can't be (-), >= Offset or > current elapsed time");
+        }
+        onset = newOnset;
         return this;
     }
 
-    public Clock setOffSet(long timeInMillis){
-        onset = NANOSECONDS.convert(timeInMillis, MILLISECONDS);
+    public Clock setOffset(final long timeInMillis){
+        long newOffset = convertToNanos(timeInMillis);
+        if(newOffset <= onset
+                || newOffset < elapsedNanos()){
+            throw new IllegalStateException("Offset Can't be <= Onset or < the current elapsed time");
+        }
+        offset = convertToNanos(timeInMillis);
         return this;
     }
-
-    public long getOnset() {
-        return onset;
-    }
-
-    public long getOffset() {
-        return offset;
-    }
-
-    public boolean isCycling() {
-        return isCycling;
-    }
-
-    public Rate getRate() {
-        return rate;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public boolean isRunning() { return isRunning; }
 
     /**
      * Elapsed time in Milliseconds
@@ -157,9 +146,50 @@ public class Clock {
 
     /**
      *
+     * @param targetUnit
+     * @return
+     */
+    public long elapsedTime(final TimeUnit targetUnit) { return targetUnit.convert(elapsedNanos(), NANOSECONDS); }
+
+    /**
+     *
+     * @return
+     */
+    public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos()); }
+
+    public Rate getRate() {
+        return rate;
+    }
+
+    public long getOnset() {
+        return onset;
+    }
+
+    public long getOffset() {
+        return offset;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public boolean isRunning() { return isRunning; }
+
+    public boolean isCycling() {
+        return isCycling;
+    }
+
+    private long elapsedNanos() {
+        return isRunning ? (long) ((rate.getValue() * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
+    }
+
+    /**
+     *
      * @return
      */
     private long systemNanoTime() {return System.nanoTime(); }
+
+    private long convertToNanos(long timeInMillis){ return NANOSECONDS.convert(timeInMillis, MILLISECONDS); }
 
     @Override
     public String toString() {
@@ -173,23 +203,6 @@ public class Clock {
         String timeStampString = hours + ":" + minutes +":"+ seconds +":"+ millis;
 
         return timeStampString;
-    }
-
-    /**
-     *
-     * @param targetUnit
-     * @return
-     */
-    public long elapsedTime(TimeUnit targetUnit) { return targetUnit.convert(elapsedNanos(), NANOSECONDS); }
-
-    /**
-     *
-     * @return
-     */
-    public Duration elapsedDuration() { return Duration.ofNanos(elapsedNanos()); }
-
-    private long elapsedNanos() {
-        return isRunning ? (long) ((rate.getValue() * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
     }
 
     public static void main (String[] args) throws InterruptedException {
