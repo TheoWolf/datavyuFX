@@ -1,4 +1,5 @@
 package media;
 
-public interface DVMedia {
+public enum DVMedia {
+    INSTANCE;
 }
