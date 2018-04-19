@@ -10,8 +10,8 @@ public class Identifier {
     /** Sequence number for the identifier */
     private final long sequenceNumber;
 
-    /** Atomic integer that counts the number of identifiers (thread safe) */
-    private static final AtomicInteger count = new AtomicInteger(0);
+    /** Atomic integer that counts the number of identifiers (thread safe), start from 1 */
+    private static final AtomicInteger count = new AtomicInteger(1);
 
     /**
      * Create an identifier with a sequence number.
@@ -65,4 +65,12 @@ public class Identifier {
     public static Identifier generateIdentifier() {
         return new Identifier(count.getAndIncrement());
     }
+
+    /**
+     * Generate the first and reserved identifier, for the main StreamViewer.
+     *
+     * @return A unique identifier with a served sequence number of 0.
+     */
+    public static Identifier createIdentifierZero() { return new Identifier(0);}
+
 }
