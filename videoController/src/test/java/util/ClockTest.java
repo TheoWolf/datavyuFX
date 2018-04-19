@@ -36,6 +36,7 @@ public class ClockTest {
         assertTrue(clock.isRunning());
 
         clock.stop();
+        clock.reset();
     }
 
     @Test
@@ -69,6 +70,9 @@ public class ClockTest {
         waistTime(100);
 
         assertTrue(clock.elapsedTime() > endTime2 && clock.isRunning());
+
+        clock.stop();
+        clock.reset();
     }
 
     @Test
@@ -128,10 +132,27 @@ public class ClockTest {
         clock.setElapsedTime(-1);
 
         clock.setElapsedTime( MILLISECONDS.convert(2, HOURS) );
+        clock.reset();
     }
 
     @Test
     public void setClockRate() {
+        long timeToWaist = 2000;
+        long threshold = 20;
+        Rate newRate =  Rate.X4;
+        Clock clock = Clock.createClock();
+        clock.setClockRate(newRate);
+        clock.start();
+        waistTime(timeToWaist);
+        assertTrue(Math.abs(clock.elapsedTime()-timeToWaist*newRate.getValue()) <= threshold);
+        clock.stop();
+        clock.reset();
+        clock.start();
+        waistTime(timeToWaist);
+        assertTrue(Math.abs(clock.elapsedTime()-timeToWaist*newRate.getValue()) <= threshold);
+        clock.stop();
+        System.out.println(clock.elapsedTime());
+        clock.reset();
     }
 
     @Test
@@ -157,6 +178,8 @@ public class ClockTest {
         clock.setOnset(-1);
 
         clock.setOnset(MILLISECONDS.convert(2, HOURS));
+
+        clock.reset();
     }
 
     @Test
@@ -182,6 +205,8 @@ public class ClockTest {
         clock.setOffset(-1);
 
         clock.setOffset(clock.getOnset()-100);
+
+        clock.reset();
     }
 
     @Test
@@ -199,6 +224,17 @@ public class ClockTest {
 
         clock.reset();
         assertFalse(clock.isRunning());
+    }
+
+    @Test
+    public void checkBoundary(){
+        Clock clock = Clock.createClock();
+        clock.start();
+        clock.setCycling(true);
+        clock.setOffset(300);
+        waistTime(3000);
+
+        clock.reset();
     }
 
     private void waistTime(final long timeInMillis){
