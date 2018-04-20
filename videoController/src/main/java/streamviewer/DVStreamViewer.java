@@ -84,10 +84,15 @@ public enum DVStreamViewer implements StreamViewer {
     @Override
     public void stop() {
         //Stop all StreamViewer
-        masterCurrentTime.reset();
         streams.entrySet()
                 .parallelStream()
-                .forEach( e -> e.getValue().stop());
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0) {
+                        masterCurrentTime.reset();
+                    }else{
+                        e.getValue().stop();
+                    }
+                });
     }
 
     @Override
