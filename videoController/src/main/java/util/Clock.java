@@ -208,10 +208,8 @@ public class Clock {
                 reset();
                 start();
             }
-            System.out.println("Clock is Running (not valid Time): " + currentTime);
         }else{
             currentTime = elapsedTime();
-            System.out.println("Clock is Running: " + currentTime);
         }
     };
 }
