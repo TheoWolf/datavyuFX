@@ -1,8 +1,15 @@
 package streamviewer;
 
 import media.DVMedia;
+import streamviewer.javafx.JfxStreamViewer;
+import util.Clock;
 import util.DVStatus;
 import util.Identifier;
+import util.Rate;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A thread safe singleton and Serializable StreamViewer
@@ -11,12 +18,19 @@ public enum DVStreamViewer implements StreamViewer {
 
     INSTANCE;
 
-    private final static Identifier identifier;
-    private static DVMedia dvMedia;
+    private final Identifier identifier = Identifier.createIdentifierZero();
+    private DVMedia dvMedia;
+    private Clock masterCurrentTime;
 
-    static {
-        identifier = Identifier.createIdentifierZero();
+    private Map<Identifier, StreamViewer> streams = new HashMap<>();
+
+    DVStreamViewer(){
+        init();
+    }
+    private void init(){
         dvMedia = DVMedia.INSTANCE;
+        masterCurrentTime = Clock.createClock();
+        streams.put(identifier,this);
     }
 
     @Override
@@ -25,29 +39,83 @@ public enum DVStreamViewer implements StreamViewer {
     @Override
     public Identifier getIdentifier() { return identifier; }
 
+
+    public long getMasterCurrentTime() {
+        return masterCurrentTime.elapsedTime();
+    }
+
+    public void addStream(StreamViewer stream){
+        if(stream == null){ throw new IllegalArgumentException(" An instance of StreamViewer Interface is needed"); }
+        streams.put(stream.getIdentifier(), stream);
+    }
+
+    public Map<Identifier, StreamViewer> getStreams() {
+        return this.streams;
+    }
+
     @Override
     public void play() {
         //Play all StreamViewer
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0){
+                        masterCurrentTime.start();
+                    }else{
+                        e.getValue().play();
+                    }
+                });
     }
 
     @Override
     public void pause() {
         //pause all StreamViewer
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0){
+                        masterCurrentTime.stop();
+                    }else{
+                        e.getValue().pause();
+                    }
+                });
     }
 
     @Override
     public void stop() {
         //Stop all StreamViewer
+        masterCurrentTime.reset();
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> e.getValue().stop());
     }
 
     @Override
     public void shuttleForward() {
         //Shuttle Forward all StreamViewer
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0) {
+                        masterCurrentTime.setClockRate(masterCurrentTime.getRate().next());
+                    }else{
+                        e.getValue().shuttleForward();
+                    }
+                });
     }
 
     @Override
     public void shuttleBackward() {
         //Shuttle Backward all StreamViewer
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0) {
+                        masterCurrentTime.setClockRate(masterCurrentTime.getRate().previous());
+                    }else {
+                        e.getValue().shuttleBackward();
+                    }
+                });
     }
 
     @Override
@@ -63,11 +131,30 @@ public enum DVStreamViewer implements StreamViewer {
     @Override
     public void seek(long timeInMillis) {
         //Seed all StreamViewer
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0) {
+                        masterCurrentTime.setClockRate(masterCurrentTime.getRate().previous());
+                    }else{
+                        e.getValue().shuttleBackward();
+                    }
+                });
+
     }
 
     @Override
     public void back(long timeInMillis) {
         //Jog Backward all StreamViewer
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0) {
+                        masterCurrentTime.setElapsedTime(masterCurrentTime.elapsedTime()-timeInMillis);
+                    }else{
+                        e.getValue().back(timeInMillis);
+                    }
+                });
     }
 
     @Override
@@ -98,5 +185,42 @@ public enum DVStreamViewer implements StreamViewer {
     @Override
     public void close() {
         //Close all the StreamViewer and release resources
+        streams.entrySet()
+                .parallelStream()
+                .forEach( e -> {
+                    if(e.getKey().asLong() == 0) {
+                        masterCurrentTime.reset();
+                    }else{
+                        e.getValue().close();
+                    }
+                });
+    }
+
+    public Rate getRate() {
+        return masterCurrentTime.getRate();
+    }
+
+    public static void main (String[] args){
+        StreamViewer jfxViewer =  JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+        StreamViewer jfxViewer2 =  JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+        StreamViewer jfxViewer3 =  JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+        StreamViewer jfxViewer4 =  JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+        StreamViewer jfxViewer5 =  JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+
+        DVStreamViewer.INSTANCE.addStream(jfxViewer);
+        DVStreamViewer.INSTANCE.addStream(jfxViewer2);
+        DVStreamViewer.INSTANCE.addStream(jfxViewer3);
+        DVStreamViewer.INSTANCE.addStream(jfxViewer4);
+        DVStreamViewer.INSTANCE.addStream(jfxViewer5);
+
+        DVStreamViewer.INSTANCE.play();
+
+        try {
+            TimeUnit.MINUTES.sleep(5);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        DVStreamViewer.INSTANCE.close();
     }
 }
