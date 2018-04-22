@@ -52,8 +52,8 @@ public class Clock {
   public Clock start() {
     if(isRunning) { throw new IllegalStateException("The Clock is already running"); }
     isRunning = true;
-    createClockTimer();
     startTime = systemNanoTime();
+    createClockTimer();
     System.out.println("Clock is Starting");
     return this;
   }
@@ -191,7 +191,7 @@ public class Clock {
     private WeakReference<Clock> masterClockRef;
 
     ClockTimerTask(Clock masterClock){
-      masterClockRef = new WeakReference<Clock>(masterClock);
+      masterClockRef = new WeakReference<>(masterClock);
     }
 
     void start(){
@@ -219,8 +219,9 @@ public class Clock {
     }
   }
 
-
-  /**  */
+  /** TODO: current time should be removed as there is no reference to this var
+   * Only use this method to check the boundary
+   */
   private void updateElapsedNanos() {
     if(!isValidTime(elapsedNanos())) {
       stop();
@@ -243,9 +244,6 @@ public class Clock {
     return isRunning ? (long) ((rate.getValue() * (systemNanoTime() - startTime)) + elapsedNanos) : elapsedNanos;
   }
 
-  /**
-   * @return
-   */
   private long systemNanoTime() { return System.nanoTime(); }
 
   private long convertToNanos(long timeInMillis) { return NANOSECONDS.convert(timeInMillis, MILLISECONDS); }

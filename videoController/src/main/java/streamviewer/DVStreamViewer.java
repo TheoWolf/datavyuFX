@@ -27,7 +27,7 @@ public enum DVStreamViewer implements StreamViewer {
 
   // StreamViewers to be notified
   private Map<Identifier, StreamViewer> streams = new HashMap<>();
-  private ReadOnlyObjectWrapper<DVStatus> status;
+  private ReadOnlyObjectWrapper<DVStatus> status ;
 
   DVStreamViewer() {
     init();
@@ -36,6 +36,7 @@ public enum DVStreamViewer implements StreamViewer {
   private void init() {
     dvMedia = DVMedia.INSTANCE;
     masterCurrentTime = Clock.createClock();
+    status = new ReadOnlyObjectWrapper<>(DVStatus.READY);// For testing
     streams.put(identifier, this);
   }
 
@@ -47,7 +48,7 @@ public enum DVStreamViewer implements StreamViewer {
 
 
   public long getMasterCurrentTime() {
-    return masterCurrentTime.elapsedTime();
+    return this.masterCurrentTime.elapsedTime();
   }
 
   public void addStream(StreamViewer stream) {
@@ -121,13 +122,15 @@ public enum DVStreamViewer implements StreamViewer {
   @Override
   public void shuttleForward() {
     //Shuttle Forward all StreamViewer
-    streams.entrySet().parallelStream().forEach(e -> {
-      if(e.getKey().asLong() == 0) {
-        masterCurrentTime.setClockRate(masterCurrentTime.getRate().next());
-      } else {
-        e.getValue().shuttleForward();
-      }
-    });
+    streams.entrySet()
+        .parallelStream()
+        .forEach(e -> {
+          if(e.getKey().asLong() == 0) {
+            masterCurrentTime.setClockRate(masterCurrentTime.getRate().next());
+          } else {
+            e.getValue().shuttleForward();
+          }
+        });
   }
 
   @Override
@@ -154,13 +157,13 @@ public enum DVStreamViewer implements StreamViewer {
 
   @Override
   public void seek(long timeInMillis) {
-    //Seed all StreamViewer
+    //Seek all StreamViewer
     if(getStatus() == DVStatus.DISPOSED){
       return;
     }
     streams.entrySet().parallelStream().forEach(e -> {
       if(e.getKey().asLong() == 0) {
-        masterCurrentTime.setClockRate(masterCurrentTime.getRate().previous());
+        masterCurrentTime.setElapsedTime(timeInMillis);
       } else {
         e.getValue().shuttleBackward();
       }
