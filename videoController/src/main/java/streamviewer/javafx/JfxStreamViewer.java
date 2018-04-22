@@ -38,7 +38,7 @@ public class JfxStreamViewer implements StreamViewer {
 
     @Override
     public void play() {
-        clockStream.start();
+        this.clockStream.start();
 
         this.checkSyncTask.execute(() -> {
             long sumDelta = 0;
@@ -62,22 +62,22 @@ public class JfxStreamViewer implements StreamViewer {
 
     @Override
     public void pause() {
-        clockStream.reset();
+        this.clockStream.reset();
     }
 
     @Override
     public void stop() {
-        clockStream.stop();
+        this.clockStream.stop();
     }
 
     @Override
     public void shuttleForward() {
-        clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
+        this.clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
     }
 
     @Override
     public void shuttleBackward() {
-        clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
+        this.clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
     }
 
     @Override
@@ -93,13 +93,13 @@ public class JfxStreamViewer implements StreamViewer {
     @Override
     public void seek(long timeInMillis) {
         //For now I will just follow the time of the master clock, the update is already done via DVStreamViewer
-        clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+        this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
     }
 
     @Override
     public void back(long timeInMillis) {
         //For now I will just follow the time of the master clock, the update is already done via DVStreamViewer
-        clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+        this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
     }
 
     @Override
@@ -134,7 +134,7 @@ public class JfxStreamViewer implements StreamViewer {
 
     @Override
     public void close() {
-        clockStream.reset();
-        checkSyncTask.shutdownNow();
+        this.clockStream.reset();
+        this.checkSyncTask.shutdownNow();
     }
 }
