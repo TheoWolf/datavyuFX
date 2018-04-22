@@ -232,7 +232,6 @@ public class Clock {
     } else {
       currentTime = elapsedTime();
     }
-    System.out.println("Master Clock Timer: " + currentTime);
   }
 
   private boolean isValidTime(long timeInNanos) {
