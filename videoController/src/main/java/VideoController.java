@@ -10,13 +10,14 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import streamviewer.DVStreamViewer;
+import streamviewer.StreamViewer;
+import streamviewer.javafx.JfxStreamViewer;
+import util.Identifier;
+import util.PlatformUtils;
 
 import java.io.File;
 
 public class VideoController extends Application {
-
-
-    private GridPane controllerkeyPad;
 
     public static void main(String[] args) {
         Application.launch(args);
@@ -45,16 +46,12 @@ public class VideoController extends Application {
     }
 
     private void initVideoControllerScene() {
-        primaryStage.setOnCloseRequest(event -> Platform.exit());
+        this.primaryStage.setOnCloseRequest(event -> Platform.exit());
 
         this.controllerkeyPad = new GridPane();
+
         controllerkeyPadInit();
 
-        //TODO: start with a simple slider just to control the stream
-//        mixerContoller = new VBox();
-//        mixerContollerInit();
-
-//        HBox videoControllerVbox = new HBox(controllerkeyPad, mixerContoller);
         HBox videoControllerVbox = new HBox(controllerkeyPad);
 
         this.controllerScene = new Scene(videoControllerVbox);
@@ -64,6 +61,8 @@ public class VideoController extends Application {
 
     private void controllerkeyPadInit() {
 
+        this.fileChooser = new FileChooser();
+        configureFileChooser();
         this.addVideoButton = new Button("Add Video");// Add media Button
 
         this.mediaTime = new Label("00:00:00:000");
@@ -165,37 +164,44 @@ public class VideoController extends Application {
     }
 
     private void setOnActions() {
-        addVideoButton.setOnAction(event -> this.openStreams());
-        playButton.setOnAction(event -> this.DVStream.play());
-        pauseButton.setOnAction(event -> this.DVStream.play());
-        stopButton.setOnAction(event -> this.DVStream.stop());
-        fButton.setOnAction(event -> this.DVStream.shuttleBackward());
-        bButton.setOnAction(event -> this.DVStream.shuttleBackward());
-        jogFButton.setOnAction(event -> this.DVStream.jogForward());
-        jogBButton.setOnAction(event -> this.DVStream.jogBackward());
-        backButton.setOnAction(event -> this.DVStream.back(5000));
-        onsetButton.setOnAction(event -> {  });
-        offsetButton.setOnAction(event -> {  });
-        pointCellbutton.setOnAction(event -> {  });
-        hideTrack.setOnAction(event -> {  });
-        findButton.setOnAction(event -> {  });
-        newCellButton.setOnAction(event -> {  });
-        newCellPrevOffsetbutton.setOnAction(event -> {  });
+        this.addVideoButton.setOnAction(event -> this.openStreams());
+        this.playButton.setOnAction(event -> this.DVStream.play());
+        this.pauseButton.setOnAction(event -> this.DVStream.pause());
+        this.stopButton.setOnAction(event -> this.DVStream.stop());
+        this.fButton.setOnAction(event -> this.DVStream.shuttleForward());
+        this.bButton.setOnAction(event -> this.DVStream.shuttleBackward());
+        this.jogFButton.setOnAction(event -> this.DVStream.jogForward());
+        this.jogBButton.setOnAction(event -> this.DVStream.jogBackward());
+        this.backButton.setOnAction(event -> this.DVStream.back(5000));
+        this.onsetButton.setOnAction(event -> {  });
+        this.offsetButton.setOnAction(event -> {  });
+        this.pointCellbutton.setOnAction(event -> {  });
+        this.hideTrack.setOnAction(event -> {  });
+        this.findButton.setOnAction(event -> {  });
+        this.newCellButton.setOnAction(event -> {  });
+        this.newCellPrevOffsetbutton.setOnAction(event -> {  });
     }
     private void openStreams() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Open A Video");
         File selectedFile = fileChooser.showOpenDialog(this.primaryStage);
         if(selectedFile != null) {
-
-//            this.DVStream.addStream();
+            StreamViewer stream1 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), selectedFile);
+            this.DVStream.addStream(stream1);
         }
+    }
+
+    private void configureFileChooser(){
+        this.fileChooser.setTitle("Open A Video");
+        this.fileChooser.setInitialDirectory(new File(PlatformUtils.USER_HOME));
     }
 
     private DVStreamViewer DVStream;
 
     private Stage primaryStage;
     private Scene controllerScene;
+
+    private GridPane controllerkeyPad;
+
+    private FileChooser fileChooser;
 
     private Button addVideoButton;
     private Button playButton;
