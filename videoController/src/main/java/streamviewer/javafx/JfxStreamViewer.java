@@ -1,36 +1,82 @@
 package streamviewer.javafx;
 
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.DoubleProperty;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
+import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+import javafx.util.Duration;
 import media.DVMedia;
 import streamviewer.DVStreamViewer;
 import streamviewer.StreamViewer;
-import util.Clock;
 import util.DVStatus;
 import util.Identifier;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
-import static sun.java2d.opengl.OGLRenderQueue.sync;
-
-public class JfxStreamViewer implements StreamViewer {
+public class JfxStreamViewer extends Stage implements StreamViewer {
 
   private final Identifier identifier;
-  private Clock clockStream;
 
+  private final MediaPlayer mediaPlayer;
+  private Media sourceMedia;
+  private MediaView mediaView;
+
+//  private Clock clockStream;
   private ClockTimerTask streamClockTask;
 
-  private JfxStreamViewer(Identifier identifier) {
+  private JfxStreamViewer(Identifier identifier, File sourceFile) {
     this.identifier = identifier;
-    this.clockStream = Clock.createClock();
-    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
-    createClockTimer();
 
+    this.sourceMedia = new Media(sourceFile.toURI().toString());
+    this.mediaPlayer = new MediaPlayer(sourceMedia);
+
+    this.mediaView = new MediaView(mediaPlayer);
+
+    final DoubleProperty width = this.mediaView.fitWidthProperty();
+    final DoubleProperty height = this.mediaView.fitHeightProperty();
+
+    width.bind(Bindings.selectDouble(this.mediaView.sceneProperty(), "width"));
+    height.bind(Bindings.selectDouble(this.mediaView.sceneProperty(), "height"));
+
+    mediaView.setPreserveRatio(true);
+
+    StackPane root = new StackPane();
+    root.getChildren().add(this.mediaView);
+
+    final Scene scene = new Scene(root, 960, 540);
+    scene.setFill(Color.BLACK);
+    this.setOnCloseRequest(new EventHandler<WindowEvent>() {
+      @Override
+      public void handle(WindowEvent event) {
+        hide();
+      }
+    });
+
+    setScene(scene);
+    setTitle(getSourceMedia().getSource());
+    show();
+
+//    this.clockStream = Clock.createClock();
+//    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+    this.mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
+    createClockTimer();
   }
 
-  public static StreamViewer createStreamViewer(Identifier identifier) {
-    return new JfxStreamViewer(identifier);
+  public Media getSourceMedia(){ return this.sourceMedia;}
+
+  public static StreamViewer createStreamViewer(Identifier identifier, File sourceFile) {
+    return new JfxStreamViewer(identifier, sourceFile);
   }
 
   @Override
@@ -40,27 +86,33 @@ public class JfxStreamViewer implements StreamViewer {
 
   @Override
   public void play() {
-    this.clockStream.start();
+    this.mediaPlayer.play();
+    //    this.clockStream.start();
   }
 
   @Override
   public void pause() {
-    this.clockStream.stop();
+    this.mediaPlayer.pause();
+//    this.clockStream.stop();
   }
 
   @Override
   public void stop() {
-    this.clockStream.reset();
+    this.mediaPlayer.stop();
+    this.mediaPlayer.setRate(DVStreamViewer.INSTANCE.getRate().getValue());
+//    this.clockStream.reset();
   }
 
   @Override
   public void shuttleForward() {
-    this.clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
+    this.mediaPlayer.setRate(DVStreamViewer.INSTANCE.getRate().getValue());
+//    this.clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
   }
 
   @Override
   public void shuttleBackward() {
-    this.clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
+    this.mediaPlayer.setRate(DVStreamViewer.INSTANCE.getRate().getValue());
+//    this.clockStream.setClockRate(DVStreamViewer.INSTANCE.getRate());
   }
 
   @Override
@@ -76,13 +128,15 @@ public class JfxStreamViewer implements StreamViewer {
   @Override
   public void seek(long timeInMillis) {
     //For now I will just follow the time of the master clock, the update is already done via DVStreamViewer
-    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+//    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+    this.mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
   }
 
   @Override
   public void back(long timeInMillis) {
     //For now I will just follow the time of the master clock, the update is already done via DVStreamViewer
-    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+//    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+    this.mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
   }
 
   @Override
@@ -117,13 +171,14 @@ public class JfxStreamViewer implements StreamViewer {
 
   @Override
   public void close() {
-    this.clockStream.reset();
+    this.mediaPlayer.stop();
     destroyClockTimer();
+    this.hide();
   }
 
   void createClockTimer() {
     if(streamClockTask == null) {
-      streamClockTask = new ClockTimerTask(clockStream);
+      streamClockTask = new ClockTimerTask(this.mediaPlayer);
       streamClockTask.start();
     }
   }
@@ -140,7 +195,7 @@ public class JfxStreamViewer implements StreamViewer {
     /**
      * Clock tick period in milliseconds
      */
-    private static final long CLOCK_SYNC_INTERVAL = 100L;
+    private static final long CLOCK_SYNC_INTERVAL = 10L;
 
     /**
      * Clock initial delay in milliseconds
@@ -150,13 +205,13 @@ public class JfxStreamViewer implements StreamViewer {
     private static final long THRESHOLD = 5L;
 
     private Timer streamClockTimer = null;
-    private WeakReference<Clock> streamClockRef;
+    private WeakReference<MediaPlayer> streamClockRef;
 
     private long sumDelta = 0;
     private long cpt = 0;
 
-    ClockTimerTask(Clock streamClock) {
-      streamClockRef = new WeakReference<Clock>(streamClock);
+    ClockTimerTask(MediaPlayer streamClock) {
+      streamClockRef = new WeakReference<>(streamClock);
     }
 
     void start() {
@@ -175,23 +230,25 @@ public class JfxStreamViewer implements StreamViewer {
     }
 
     void sync(){
-      clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
+      mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
     }
 
     @Override
     public void run() {
-      final Clock clock = streamClockRef.get();
+      final MediaPlayer clock = streamClockRef.get();
       if(clock != null) {
-        long masterClock = DVStreamViewer.INSTANCE.getMasterCurrentTime();
-        long slaveClock = clockStream.elapsedTime();
-        long delta = masterClock - slaveClock;
-        if (delta > THRESHOLD){
-          pause();
-          sync();
-        }
-        sumDelta += Math.abs(delta);
-        cpt++;
-        System.out.println(identifier + " Master Clock: " + masterClock + " Stream CLock: " + slaveClock + " Delta: " + (masterClock - slaveClock));
+        Platform.runLater(() -> {
+          long masterClock = DVStreamViewer.INSTANCE.getMasterCurrentTime();
+          long slaveClock = (long) mediaPlayer.getCurrentTime().toMillis();
+          long delta = masterClock - slaveClock;
+          if (delta > THRESHOLD){
+//            pause();
+//            sync();
+          }
+          sumDelta += Math.abs(delta);
+          cpt++;
+//          System.out.println(identifier + " Master Clock: " + masterClock + " Stream CLock: " + slaveClock + " Delta: " + (masterClock - slaveClock));
+        });
       } else {
         cancel();
       }
