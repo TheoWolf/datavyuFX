@@ -51,6 +51,7 @@ public class Clock {
   /**  */
   public Clock start() {
     if(isRunning) { throw new IllegalStateException("The Clock is already running"); }
+    if(getRate() == Rate.X0){ rate = Rate.playRate(); }
     isRunning = true;
     startTime = systemNanoTime();
     createClockTimer();
@@ -73,6 +74,7 @@ public class Clock {
   public Clock reset() {
     elapsedNanos = onset;
     isRunning = false;
+    rate = Rate.stopRate();
     System.out.println("Clock Reset");
     destroyClockTimer();
     return this;
