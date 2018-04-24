@@ -223,27 +223,27 @@ public enum DVStreamViewer implements StreamViewer {
     return masterCurrentTime.getRate();
   }
 
-  public static void main(String[] args) {
-    StreamViewer jfxViewer = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
-    StreamViewer jfxViewer2 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
-    StreamViewer jfxViewer3 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
-    StreamViewer jfxViewer4 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
-    StreamViewer jfxViewer5 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
-
-    DVStreamViewer.INSTANCE.addStream(jfxViewer);
-    DVStreamViewer.INSTANCE.addStream(jfxViewer2);
-    DVStreamViewer.INSTANCE.addStream(jfxViewer3);
-    DVStreamViewer.INSTANCE.addStream(jfxViewer4);
-    DVStreamViewer.INSTANCE.addStream(jfxViewer5);
-
-    DVStreamViewer.INSTANCE.play();
-
-    try {
-      TimeUnit.SECONDS.sleep(10);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    DVStreamViewer.INSTANCE.close();
-  }
+//  public static void main(String[] args) {
+////    StreamViewer jfxViewer = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
+////    StreamViewer jfxViewer2 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
+////    StreamViewer jfxViewer3 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
+////    StreamViewer jfxViewer4 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
+////    StreamViewer jfxViewer5 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
+////
+////    DVStreamViewer.INSTANCE.addStream(jfxViewer);
+////    DVStreamViewer.INSTANCE.addStream(jfxViewer2);
+////    DVStreamViewer.INSTANCE.addStream(jfxViewer3);
+////    DVStreamViewer.INSTANCE.addStream(jfxViewer4);
+////    DVStreamViewer.INSTANCE.addStream(jfxViewer5);
+//
+//    DVStreamViewer.INSTANCE.play();
+//
+//    try {
+//      TimeUnit.SECONDS.sleep(10);
+//    } catch (InterruptedException e) {
+//      e.printStackTrace();
+//    }
+//
+//    DVStreamViewer.INSTANCE.close();
+//  }
 }
