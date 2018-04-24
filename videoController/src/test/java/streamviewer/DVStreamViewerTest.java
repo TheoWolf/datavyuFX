@@ -3,7 +3,6 @@ package streamviewer;
 import media.DVMedia;
 import org.junit.Test;
 import streamviewer.javafx.JfxStreamViewer;
-import util.Clock;
 import util.Identifier;
 
 import static org.junit.Assert.*;
@@ -41,7 +40,7 @@ public class DVStreamViewerTest {
     int streamNumber = 3;
 
     for(int i = 0; i < streamNumber; i++) {
-      StreamViewer stream = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+      StreamViewer stream = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
       DVStreamViewer.INSTANCE.addStream(stream);
     }
     assertEquals(4, DVStreamViewer.INSTANCE.getStreams().size());
@@ -52,8 +51,8 @@ public class DVStreamViewerTest {
     //There is always one stream in the streams HashMap, the DVStreamViewer is added
     //to the streams Map when created, and we have to consider it when checking the size of
     //streams
-    StreamViewer stream1 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
-    StreamViewer stream2 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier());
+    StreamViewer stream1 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
+    StreamViewer stream2 = JfxStreamViewer.createStreamViewer(Identifier.generateIdentifier(), null);
     DVStreamViewer.INSTANCE.addStream(stream1);
     DVStreamViewer.INSTANCE.addStream(stream2);
     assertEquals(3, DVStreamViewer.INSTANCE.getStreams().size());

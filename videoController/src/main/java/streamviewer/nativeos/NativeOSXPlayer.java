@@ -1,26 +1,26 @@
-package org.datavyu.plugins.nativeosx;
+package streamviewer.nativeos;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.datavyu.Datavyu;
-import org.datavyu.util.NativeLibraryLoader;
+
+import util.NativeLibraryLoader;
+import util.PlatformUtils;
 
 import java.awt.*;
 import java.io.File;
 
 public class NativeOSXPlayer extends Canvas {
 
-    private static Logger logger = LogManager.getLogger(NativeOSXPlayer.class);
+//    private static Logger logger = LogManager.getLogger(NativeOSXPlayer.class);
 
     private static int playerCount = 0;
 
     static {
         try {
-            if (Datavyu.getPlatform() == Datavyu.Platform.MAC) {
+            if (PlatformUtils.IS_OS_MAC) {
                 NativeLibraryLoader.extractAndLoad("NativeOSXCanvas");
             }
         } catch (Exception e) {
-            logger.error("Unable to load the native library: ", e);
+//            logger.error("Unable to load the native library: ", e);
+            System.out.println("Unable to load the native library: " + e);
         }
     }
 
@@ -44,11 +44,12 @@ public class NativeOSXPlayer extends Canvas {
 
     public void addNotify() {
         super.addNotify();
-        logger.info("Opening video file: " + sourceFile.toURI().getPath());
+//        logger.info("Opening video file: " + sourceFile.toURI().getPath());
         try {
             addNativeOSXCoreAnimationLayer("file://" + sourceFile.toURI().getPath());
         } catch (Exception e) {
-            logger.error("Error when opening native core animation layer ", e);
+//            logger.error("Error when opening native core animation layer ", e);
+            System.out.println("Error when opening native core animation layer " + e);
         }
     }
 
