@@ -55,4 +55,6 @@ public interface StreamViewer {
 
     /** Close the Window, and destroy allocated resources */
     void close();
+
+    void addStreamListener(StreamListener streamListener);
 }
