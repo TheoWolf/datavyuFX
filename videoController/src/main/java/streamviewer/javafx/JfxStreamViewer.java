@@ -15,6 +15,7 @@ import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import media.DVMedia;
 import streamviewer.DVStreamViewer;
+import streamviewer.StreamListener;
 import streamviewer.StreamViewer;
 import util.DVStatus;
 import util.Identifier;
@@ -34,6 +35,7 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
 
 //  private Clock clockStream;
   private ClockTimerTask streamClockTask;
+  private StreamListener streamListener;
 
   private JfxStreamViewer(Identifier identifier, File sourceFile) {
     this.identifier = identifier;
@@ -59,7 +61,7 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
     this.setOnCloseRequest(new EventHandler<WindowEvent>() {
       @Override
       public void handle(WindowEvent event) {
-        hide();
+        close();
       }
     });
 
@@ -70,10 +72,11 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
 //    this.clockStream = Clock.createClock();
 //    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
     this.mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
+
     createClockTimer();
   }
 
-  public Media getSourceMedia(){ return this.sourceMedia;}
+  public Media getSourceMedia(){ return this.sourceMedia; }
 
   public static StreamViewer createStreamViewer(Identifier identifier, File sourceFile) {
     return new JfxStreamViewer(identifier, sourceFile);
@@ -81,7 +84,7 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
 
   @Override
   public Identifier getIdentifier() {
-    return identifier;
+    return this.identifier;
   }
 
   @Override
@@ -99,7 +102,6 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
   @Override
   public void stop() {
     this.mediaPlayer.stop();
-    this.mediaPlayer.setRate(DVStreamViewer.INSTANCE.getRate().getValue());
 //    this.clockStream.reset();
   }
 
@@ -129,14 +131,14 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
   public void seek(long timeInMillis) {
     //For now I will just follow the time of the master clock, the update is already done via DVStreamViewer
 //    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
-    this.mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
+    this.mediaPlayer.seek(Duration.millis(timeInMillis));
   }
 
   @Override
   public void back(long timeInMillis) {
     //For now I will just follow the time of the master clock, the update is already done via DVStreamViewer
 //    this.clockStream.setElapsedTime(DVStreamViewer.INSTANCE.getMasterCurrentTime());
-    this.mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
+    this.mediaPlayer.seek(Duration.millis(timeInMillis));
   }
 
   @Override
@@ -176,6 +178,11 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
     this.hide();
   }
 
+  @Override
+  public void addStreamListener(StreamListener streamListener){
+    this.streamListener = streamListener;
+  }
+
   void createClockTimer() {
     if(streamClockTask == null) {
       streamClockTask = new ClockTimerTask(this.mediaPlayer);
@@ -192,17 +199,13 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
 
   class ClockTimerTask extends TimerTask {
 
-    /**
-     * Clock tick period in milliseconds
-     */
+    /** Clock tick period in milliseconds */
     private static final long CLOCK_SYNC_INTERVAL = 10L;
 
-    /**
-     * Clock initial delay in milliseconds
-     */
+    /** Clock initial delay in milliseconds */
     private static final long CLOCK_SYNC_DELAY = 0L;
 
-    private static final long THRESHOLD = 5L;
+    private static final long THRESHOLD = 25L;
 
     private Timer streamClockTimer = null;
     private WeakReference<MediaPlayer> streamClockRef;
@@ -230,7 +233,7 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
     }
 
     void sync(){
-      mediaPlayer.seek(Duration.millis(DVStreamViewer.INSTANCE.getMasterCurrentTime()));
+      streamListener.requestSync(identifier);
     }
 
     @Override
@@ -243,11 +246,11 @@ public class JfxStreamViewer extends Stage implements StreamViewer {
           long delta = masterClock - slaveClock;
           if (delta > THRESHOLD){
 //            pause();
-//            sync();
+            sync();
           }
           sumDelta += Math.abs(delta);
           cpt++;
-//          System.out.println(identifier + " Master Clock: " + masterClock + " Stream CLock: " + slaveClock + " Delta: " + (masterClock - slaveClock));
+          System.out.println(identifier + " Master Clock: " + masterClock + " Stream CLock: " + slaveClock + " Delta: " + (masterClock - slaveClock));
         });
       } else {
         cancel();
